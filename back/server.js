@@ -8,11 +8,19 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.send("Hobby Tracker API running");
+    res.send("Habit Tracker API running");
 });
 
-const PORT = process.env.PORT || 5000;
+app.get("/habits", (req, res) => {
+    const habits = [
+        { id: 1, name: "Gym", completed: false },
+        { id: 2, name: "Read", completed: true },
+        { id: 3, name: "Uni Work", completed: false }
+    ];
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    res.json(habits);
+});
+
+app.listen(5000, () => {
+    console.log("Server running on port 5000");
 });
