@@ -1,8 +1,11 @@
 ﻿import { useEffect, useState } from "react";
 
 function App() {
-    const [habits, setHabits] = useState([]);
 
+    const [habits, setHabits] = useState([]);
+    const [newHabit, setNewHabit] = useState("");
+
+    // Fetch habits from backend
     useEffect(() => {
         fetch("http://localhost:5000/habits")
             .then(res => res.json())
@@ -10,15 +13,49 @@ function App() {
             .catch(err => console.error(err));
     }, []);
 
+    // Add new habit
+    const addHabit = () => {
+
+        if (newHabit.trim() === "") return;
+
+        fetch("http://localhost:5000/habits", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: newHabit })
+        })
+            .then(res => res.json())
+            .then(data => {
+                setHabits([...habits, data]);
+                setNewHabit("");
+            })
+            .catch(err => console.error(err));
+    };
+
     return (
-        <div>
+        <div style={{ padding: "20px", fontFamily: "Arial" }}>
+
             <h1>Habit Tracker</h1>
 
-            {habits.map(habit => (
-                <p key={habit.id}>
-                    {habit.name} - {habit.completed ? "✅" : "❌"}
-                </p>
-            ))}
+            <input
+                value={newHabit}
+                onChange={(e) => setNewHabit(e.target.value)}
+                placeholder="New habit"
+            />
+
+            <button onClick={addHabit}>
+                Add
+            </button>
+
+            <div style={{ marginTop: "20px" }}>
+                {habits.map(habit => (
+                    <div key={habit.id}>
+                        {habit.name} - {habit.completed ? "\u2705" : "\u274C"}
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }
