@@ -53,6 +53,23 @@ app.patch("/habits/:id", (req, res) => {
 
 });
 
+// Allows habits to be deleted
+app.delete("/habits/:id", (req, res) => {
+
+    // Check if the habit exists
+    const habitIndex = habits.findIndex(h => h.id == req.params.id);
+    if (habitIndex === -1) {
+        return res.status(404).json({ message: "Habit not found" });
+    }
+
+    // Remove habit from the array
+    const deletedHabit = habits.splice(habitIndex, 1);
+
+    // Return deleted habit
+    res.json(deletedHabit[0]);
+
+});
+
 // Start server
 app.listen(5000, () => {
     console.log("Server running on port 5000");
