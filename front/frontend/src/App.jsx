@@ -2,58 +2,54 @@
 
 function App() {
 
-    const [habits, setHabits] = useState([]);
+    const [habits, setHabits] = useState(() => {
+        try {
+            const saved = localStorage.getItem("habits");
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
     const [newHabit, setNewHabit] = useState("");
     const [filter, setFilter] = useState("all");
 
-    // Fetch habits
-    useEffect(() => {
-        fetch("http://localhost:5000/habits")
-            .then(res => res.json())
-            .then(data => setHabits(data))
-            .catch(err => console.error(err));
-    }, []);
 
-    // Add a habit
+    // 🔥 Save habits whenever they change
+    useEffect(() => {
+        localStorage.setItem("habits", JSON.stringify(habits));
+    }, [habits]);
+
+    // Add habit
     const addHabit = () => {
         if (newHabit.trim() === "") return;
 
-        fetch("http://localhost:5000/habits", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ name: newHabit })
-        })
-            .then(res => res.json())
-            .then(data => {
-                setHabits([...habits, data]);
-                setNewHabit("");
-            });
+        const newItem = {
+            id: Date.now(),
+            name: newHabit,
+            completed: false
+        };
+
+        setHabits([...habits, newItem]);
+        setNewHabit("");
+        setFilter("all");
     };
 
-    // Toggle a habit
+    // Toggle habit
     const toggleHabit = (id) => {
-        fetch(`http://localhost:5000/habits/${id}`, {
-            method: "PATCH"
-        })
-            .then(res => res.json())
-            .then(updatedHabit => {
-                setHabits(habits.map(h => h.id === id ? updatedHabit : h));
-            });
+        setHabits(
+            habits.map(h =>
+                h.id === id ? { ...h, completed: !h.completed } : h
+            )
+        );
     };
 
-    // Delete a habit
+    // Delete habit
     const deleteHabit = (id) => {
-        fetch(`http://localhost:5000/habits/${id}`, {
-            method: "DELETE"
-        })
-            .then(() => {
-                setHabits(habits.filter(h => h.id !== id));
-            });
+        setHabits(habits.filter(h => h.id !== id));
     };
 
-    // Filter 
+    // Filter logic
     const filteredHabits = habits.filter(habit => {
         if (filter === "completed") return habit.completed;
         if (filter === "incomplete") return !habit.completed;
@@ -63,7 +59,7 @@ function App() {
     return (
 
         <div style={{
-            width: "100vw", 
+            width: "100vw",
             height: "100vh",
             display: "flex",
             justifyContent: "center",
@@ -87,7 +83,7 @@ function App() {
                     Habit Tracker
                 </h1>
 
-                {/* user input */}
+                {/* Input */}
                 <div style={{ display: "flex", marginBottom: "20px" }}>
                     <input
                         value={newHabit}
@@ -115,20 +111,21 @@ function App() {
                     </button>
                 </div>
 
-                {/* Filter Buttons */}
+                {/* Filters */}
                 <div style={{ marginBottom: "15px", textAlign: "center" }}>
                     <button onClick={() => setFilter("all")} style={{ margin: "5px" }}>All</button>
                     <button onClick={() => setFilter("completed")} style={{ margin: "5px" }}>Completed</button>
                     <button onClick={() => setFilter("incomplete")} style={{ margin: "5px" }}>Incomplete</button>
                 </div>
 
-                {/* Habits */}
+                {/* Empty state */}
                 {filteredHabits.length === 0 && (
                     <p style={{ textAlign: "center", color: "#777" }}>
                         No habits found
                     </p>
                 )}
 
+                {/* Habits */}
                 {filteredHabits.map(habit => (
                     <div
                         key={habit.id}
