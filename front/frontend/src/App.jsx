@@ -1,21 +1,16 @@
-﻿
-
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 
 function App() {
 
-    // Authentication state
     const [user, setUser] = useState(() => localStorage.getItem("user"));
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [isLogin, setIsLogin] = useState(true);
 
-    // Theme state
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem("darkMode") === "true";
     });
 
-    // Habits 
     const [habits, setHabits] = useState(() => {
         try {
             const saved = localStorage.getItem(`habits_${localStorage.getItem("user")}`);
@@ -28,19 +23,16 @@ function App() {
     const [newHabit, setNewHabit] = useState("");
     const [filter, setFilter] = useState("all");
 
-    // Save habits
     useEffect(() => {
         if (user) {
             localStorage.setItem(`habits_${user}`, JSON.stringify(habits));
         }
     }, [habits, user]);
 
-    // Save theme
     useEffect(() => {
         localStorage.setItem("darkMode", darkMode);
     }, [darkMode]);
 
-    // Authentication logic
     const handleAuth = () => {
         if (!username || !password) return;
 
@@ -50,18 +42,11 @@ function App() {
             const existingUser = users.find(
                 u => u.username === username && u.password === password
             );
-
-            if (!existingUser) {
-                alert("Invalid login");
-                return;
-            }
+            if (!existingUser) return alert("Invalid login");
         } else {
-            const userExists = users.find(u => u.username === username);
-            if (userExists) {
-                alert("User already exists");
-                return;
+            if (users.find(u => u.username === username)) {
+                return alert("User already exists");
             }
-
             users.push({ username, password });
             localStorage.setItem("users", JSON.stringify(users));
         }
@@ -79,121 +64,142 @@ function App() {
         setHabits([]);
     };
 
-    // Add habit
     const addHabit = () => {
         if (!newHabit.trim()) return;
 
-        const newItem = {
-            id: Date.now(),
-            name: newHabit,
-            completed: false,
-            streak: 0,
-            lastCompleted: null
-        };
+        setHabits([
+            ...habits,
+            {
+                id: Date.now(),
+                name: newHabit,
+                completed: false,
+                streak: 0,
+                lastCompleted: null
+            }
+        ]);
 
-        setHabits([...habits, newItem]);
         setNewHabit("");
-        setFilter("all");
     };
 
-    // Toggle habit with streak logic
     const toggleHabit = (id) => {
         const today = new Date().toDateString();
 
-        setHabits(habits.map(habit => {
-            if (habit.id !== id) return habit;
+        setHabits(habits.map(h => {
+            if (h.id !== id) return h;
 
-            let newCompleted = !habit.completed;
-            let newStreak = habit.streak;
-            let newLastCompleted = habit.lastCompleted;
+            let completed = !h.completed;
+            let streak = h.streak;
+            let lastCompleted = h.lastCompleted;
 
-            if (newCompleted && habit.lastCompleted !== today) {
-                if (habit.lastCompleted) {
-                    const last = new Date(habit.lastCompleted);
+            if (completed && h.lastCompleted !== today) {
+                if (h.lastCompleted) {
+                    const last = new Date(h.lastCompleted);
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
 
                     if (last.toDateString() === yesterday.toDateString()) {
-                        newStreak++;
+                        streak++;
                     } else {
-                        newStreak = 1;
+                        streak = 1;
                     }
                 } else {
-                    newStreak = 1;
+                    streak = 1;
                 }
 
-                newLastCompleted = today;
+                lastCompleted = today;
             }
 
-            return {
-                ...habit,
-                completed: newCompleted,
-                streak: newStreak,
-                lastCompleted: newLastCompleted
-            };
+            return { ...h, completed, streak, lastCompleted };
         }));
     };
 
-    // Delete habit
     const deleteHabit = (id) => {
         setHabits(habits.filter(h => h.id !== id));
     };
 
-    // Filter habits
     const filteredHabits = habits.filter(h => {
         if (filter === "completed") return h.completed;
         if (filter === "incomplete") return !h.completed;
         return true;
     });
 
-    // Theme styles
+    const total = habits.length;
+    const completedCount = habits.filter(h => h.completed).length;
+    const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+
     const theme = {
-        bg: darkMode ? "#1e1e1e" : "#eef2f7",
-        card: darkMode ? "#2c2c2c" : "#fff",
-        text: darkMode ? "#fff" : "#333",
-        input: darkMode ? "#444" : "#fff"
+        bg: darkMode ? "#0f172a" : "#e6ecf5",
+        card: darkMode ? "#1e293b" : "#ffffff",
+        text: darkMode ? "#f1f5f9" : "#1e293b"
     };
 
-    // Login screen
+    // LOGIN SCREEN (FIXED ALIGNMENT)
     if (!user) {
         return (
             <div style={{
-                width: "100vw",
-                height: "100vh",
+                position: "fixed",
+                inset: 0,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                backgroundColor: theme.bg
+                background: theme.bg
             }}>
                 <div style={{
+                    width: "320px",
                     padding: "30px",
-                    backgroundColor: theme.card,
-                    borderRadius: "15px",
-                    boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+                    borderRadius: "16px",
+                    background: theme.card,
                     textAlign: "center",
-                    width: "300px",
                     color: theme.text
                 }}>
                     <h2>{isLogin ? "Login" : "Register"}</h2>
 
-                    <input
-                        placeholder="Username"
-                        onChange={(e) => setUsername(e.target.value)}
-                        style={{ marginBottom: "10px", width: "100%" }}
-                    />
+                    <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginTop: "15px"
+                    }}>
+                        <input
+                            placeholder="Username"
+                            onChange={e => setUsername(e.target.value)}
+                            style={{
+                                width: "90%",
+                                padding: "10px",
+                                borderRadius: "8px",
+                                border: "1px solid #ccc"
+                            }}
+                        />
 
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={{ marginBottom: "15px", width: "100%" }}
-                    />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            onChange={e => setPassword(e.target.value)}
+                            style={{
+                                width: "90%",
+                                padding: "10px",
+                                borderRadius: "8px",
+                                border: "1px solid #ccc"
+                            }}
+                        />
+                    </div>
 
-                    <button onClick={handleAuth} style={{ width: "100%" }}>
+                    <button
+                        onClick={handleAuth}
+                        style={{
+                            width: "90%",
+                            marginTop: "15px",
+                            padding: "10px"
+                        }}
+                    >
                         {isLogin ? "Login" : "Register"}
                     </button>
 
-                    <p onClick={() => setIsLogin(!isLogin)} style={{ cursor: "pointer", marginTop: "10px" }}>
+                    <p
+                        onClick={() => setIsLogin(!isLogin)}
+                        style={{ cursor: "pointer", marginTop: "10px" }}
+                    >
                         {isLogin ? "Create account" : "Already have an account?"}
                     </p>
                 </div>
@@ -201,21 +207,22 @@ function App() {
         );
     }
 
-    // Main app
+    // MAIN APP
     return (
         <div style={{
-            width: "100vw",
-            height: "100vh",
+            position: "fixed",
+            inset: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: theme.bg
+            background: theme.bg
         }}>
             <div style={{
-                width: "400px",
-                padding: "25px",
-                backgroundColor: theme.card,
-                borderRadius: "15px",
+                width: "100%",
+                maxWidth: "500px",
+                padding: "30px",
+                borderRadius: "20px",
+                background: theme.card,
                 color: theme.text
             }}>
 
@@ -225,15 +232,39 @@ function App() {
                 </div>
 
                 <button onClick={() => setDarkMode(!darkMode)}>
-                    {darkMode ? "Light" : "Dark"}
+                    {darkMode ? "Light Mode" : "Dark Mode"}
                 </button>
+
+                <div style={{
+                    marginTop: "20px",
+                    padding: "15px",
+                    borderRadius: "12px",
+                    background: darkMode ? "#334155" : "#f1f5f9"
+                }}>
+                    <div>Total: {total}</div>
+                    <div>Completed: {completedCount}</div>
+                    <div>Progress: {percent}%</div>
+
+                    <div style={{
+                        height: "10px",
+                        background: "#ccc",
+                        borderRadius: "5px",
+                        marginTop: "10px"
+                    }}>
+                        <div style={{
+                            width: `${percent}%`,
+                            height: "100%",
+                            background: "#4caf50"
+                        }} />
+                    </div>
+                </div>
 
                 <div style={{ display: "flex", marginTop: "15px" }}>
                     <input
                         value={newHabit}
-                        onChange={(e) => setNewHabit(e.target.value)}
+                        onChange={e => setNewHabit(e.target.value)}
                         placeholder="New habit"
-                        style={{ flexGrow: 1 }}
+                        style={{ flexGrow: 1, padding: "10px" }}
                     />
                     <button onClick={addHabit}>Add</button>
                 </div>
@@ -241,15 +272,22 @@ function App() {
                 <div style={{ marginTop: "10px" }}>
                     <button onClick={() => setFilter("all")}>All</button>
                     <button onClick={() => setFilter("completed")}>Completed</button>
-                    <button onClick={() => setFilter("incomplete")}>Incomplete</button>
+                    <button onClick={() => setFilter("incomplete")}>Active</button>
                 </div>
 
                 {filteredHabits.map(h => (
-                    <div key={h.id} style={{ marginTop: "10px" }}>
+                    <div key={h.id} style={{
+                        marginTop: "10px",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        background: darkMode ? "#1e293b" : "#f0f3f8"
+                    }}>
                         <span onClick={() => toggleHabit(h.id)} style={{ cursor: "pointer" }}>
-                            {h.name} (Streak: {h.streak}) {h.completed ? "Done" : "Not done"}
+                            {h.name} (Streak: {h.streak}) {h.completed ? "Done" : "To Do"}
                         </span>
-                        <button onClick={() => deleteHabit(h.id)}>Delete</button>
+                        <button onClick={() => deleteHabit(h.id)} style={{ marginLeft: "10px" }}>
+                            Delete
+                        </button>
                     </div>
                 ))}
 
