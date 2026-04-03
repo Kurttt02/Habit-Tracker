@@ -17,7 +17,7 @@ Getting Started
 
 1. Clone the repository
 
-git clone https://github.com/your-username/habit-tracker.git
+`git clone https://github.com/your-username/habit-tracker.git`
 
 cd habit-tracker
 
