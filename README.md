@@ -19,21 +19,21 @@ Getting Started
 
 `git clone https://github.com/your-username/habit-tracker.git`
 
-cd habit-tracker
+`cd habit-tracker`
 
 2. Install dependencies
 
-npm install
+`npm install`
 
 3. Start the development server
 
-npm run dev
+`npm run dev`
 
 4. Open the application
 
 Once the server is running, open your browser and go to:
 
-http://localhost:5173
+`http://localhost:5173`
 
 
 Future Improvements / Roadmap
