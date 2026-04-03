@@ -19,8 +19,6 @@ Getting Started
 
 `git clone https://github.com/your-username/habit-tracker.git`
 
-`cd habit-tracker`
-
 2. Install dependencies
 
 `npm install`
