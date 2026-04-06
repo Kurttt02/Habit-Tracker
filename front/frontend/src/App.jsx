@@ -1,139 +1,103 @@
 ﻿import { useEffect, useState } from "react";
 
 function App() {
-
+    // The logged in user
     const [user, setUser] = useState(() => localStorage.getItem("user"));
+    //Login Inputs
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    //Toggles login or register 
     const [isLogin, setIsLogin] = useState(true);
-
+    //Habit data
+    const [habits, setHabits] = useState([]);
+    //Input for creating new habit.
+    const [newHabit, setNewHabit] = useState("");
+    // Toggles light / dark mode
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem("darkMode") === "true";
     });
-
-    const [habits, setHabits] = useState(() => {
-        try {
-            const saved = localStorage.getItem(`habits_${localStorage.getItem("user")}`);
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
-
-    const [newHabit, setNewHabit] = useState("");
+    // Changes filter states
     const [filter, setFilter] = useState("all");
 
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem(`habits_${user}`, JSON.stringify(habits));
-        }
-    }, [habits, user]);
-
+    //Saves the dark mode preference on startup
     useEffect(() => {
         localStorage.setItem("darkMode", darkMode);
     }, [darkMode]);
 
+    // Fetch habits from db
+    useEffect(() => {
+        fetch("http://localhost:5000/habits")
+            .then(res => res.json())
+            .then(data => setHabits(data));
+    }, []);
+
+    // My basic auth process
     const handleAuth = () => {
         if (!username || !password) return;
 
-        let users = JSON.parse(localStorage.getItem("users")) || [];
-
-        if (isLogin) {
-            const existingUser = users.find(
-                u => u.username === username && u.password === password
-            );
-            if (!existingUser) return alert("Invalid login");
-        } else {
-            if (users.find(u => u.username === username)) {
-                return alert("User already exists");
-            }
-            users.push({ username, password });
-            localStorage.setItem("users", JSON.stringify(users));
-        }
-
         localStorage.setItem("user", username);
         setUser(username);
-
-        const saved = localStorage.getItem(`habits_${username}`);
-        setHabits(saved ? JSON.parse(saved) : []);
     };
 
     const logout = () => {
         localStorage.removeItem("user");
         setUser(null);
-        setHabits([]);
     };
 
-    const addHabit = () => {
+    // Adds a new habit to the db
+    const addHabit = async () => {
         if (!newHabit.trim()) return;
 
-        setHabits([
-            ...habits,
-            {
-                id: Date.now(),
-                name: newHabit,
-                completed: false,
-                streak: 0,
-                lastCompleted: null
-            }
-        ]);
-
+        const res = await fetch("http://localhost:5000/habits", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: newHabit })
+        });
+        //Updates the website
+        const data = await res.json();
+        setHabits([...habits, data]);
         setNewHabit("");
     };
+    //Toggles the completion state
+    const toggleHabit = async (id) => {
+        const res = await fetch(`http://localhost:5000/habits/${id}`, {
+            method: "PATCH"
+        });
 
-    const toggleHabit = (id) => {
-        const today = new Date().toDateString();
-
-        setHabits(habits.map(h => {
-            if (h.id !== id) return h;
-
-            let completed = !h.completed;
-            let streak = h.streak;
-            let lastCompleted = h.lastCompleted;
-
-            if (completed && h.lastCompleted !== today) {
-                if (h.lastCompleted) {
-                    const last = new Date(h.lastCompleted);
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-
-                    if (last.toDateString() === yesterday.toDateString()) {
-                        streak++;
-                    } else {
-                        streak = 1;
-                    }
-                } else {
-                    streak = 1;
-                }
-
-                lastCompleted = today;
-            }
-
-            return { ...h, completed, streak, lastCompleted };
-        }));
+        const updated = await res.json();
+        // Updates local storage 
+        setHabits(habits.map(h => h.id === id ? updated : h));
     };
-
-    const deleteHabit = (id) => {
+    //Deletes a habit
+    const deleteHabit = async (id) => {
+        await fetch(`http://localhost:5000/habits/${id}`, {
+            method: "DELETE"
+        });
+        //Removes habit from the UI
         setHabits(habits.filter(h => h.id !== id));
     };
-
+    // Filter logic
     const filteredHabits = habits.filter(h => {
         if (filter === "completed") return h.completed;
-        if (filter === "incomplete") return !h.completed;
+        if (filter === "active") return !h.completed;
         return true;
     });
 
-    const total = habits.length;
-    const completedCount = habits.filter(h => h.completed).length;
-    const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
 
+    const total = habits.length;
+    const completed = habits.filter(h => h.completed).length;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    // Theme code
     const theme = {
         bg: darkMode ? "#0f172a" : "#e6ecf5",
         card: darkMode ? "#1e293b" : "#ffffff",
         text: darkMode ? "#f1f5f9" : "#1e293b"
     };
 
-    // LOGIN SCREEN (FIXED ALIGNMENT)
+    // The login screen design
     if (!user) {
         return (
             <div style={{
@@ -164,35 +128,18 @@ function App() {
                         <input
                             placeholder="Username"
                             onChange={e => setUsername(e.target.value)}
-                            style={{
-                                width: "90%",
-                                padding: "10px",
-                                borderRadius: "8px",
-                                border: "1px solid #ccc"
-                            }}
+                            style={{ width: "90%", padding: "10px" }}
                         />
 
                         <input
                             type="password"
                             placeholder="Password"
                             onChange={e => setPassword(e.target.value)}
-                            style={{
-                                width: "90%",
-                                padding: "10px",
-                                borderRadius: "8px",
-                                border: "1px solid #ccc"
-                            }}
+                            style={{ width: "90%", padding: "10px" }}
                         />
                     </div>
 
-                    <button
-                        onClick={handleAuth}
-                        style={{
-                            width: "90%",
-                            marginTop: "15px",
-                            padding: "10px"
-                        }}
-                    >
+                    <button onClick={handleAuth} style={{ width: "90%", marginTop: "15px" }}>
                         {isLogin ? "Login" : "Register"}
                     </button>
 
@@ -207,7 +154,7 @@ function App() {
         );
     }
 
-    // MAIN APP
+    // Main application design to make sure its centered on my screen
     return (
         <div style={{
             position: "fixed",
@@ -242,7 +189,7 @@ function App() {
                     background: darkMode ? "#334155" : "#f1f5f9"
                 }}>
                     <div>Total: {total}</div>
-                    <div>Completed: {completedCount}</div>
+                    <div>Completed: {completed}</div>
                     <div>Progress: {percent}%</div>
 
                     <div style={{
@@ -272,7 +219,7 @@ function App() {
                 <div style={{ marginTop: "10px" }}>
                     <button onClick={() => setFilter("all")}>All</button>
                     <button onClick={() => setFilter("completed")}>Completed</button>
-                    <button onClick={() => setFilter("incomplete")}>Active</button>
+                    <button onClick={() => setFilter("active")}>Active</button>
                 </div>
 
                 {filteredHabits.map(h => (
@@ -280,12 +227,18 @@ function App() {
                         marginTop: "10px",
                         padding: "12px",
                         borderRadius: "10px",
-                        background: darkMode ? "#1e293b" : "#f0f3f8"
+                        background: darkMode ? "#1e293b" : "#f0f3f8",
+                        display: "flex",
+                        justifyContent: "space-between"
                     }}>
-                        <span onClick={() => toggleHabit(h.id)} style={{ cursor: "pointer" }}>
-                            {h.name} (Streak: {h.streak}) {h.completed ? "Done" : "To Do"}
+                        <span
+                            onClick={() => toggleHabit(h.id)}
+                            style={{ cursor: "pointer" }}
+                        >
+                            {h.name} {h.completed ? "(Done)" : ""}
                         </span>
-                        <button onClick={() => deleteHabit(h.id)} style={{ marginLeft: "10px" }}>
+
+                        <button onClick={() => deleteHabit(h.id)}>
                             Delete
                         </button>
                     </div>

@@ -1,6 +1,5 @@
-#What is ignored on to commit to github
+﻿#What is ignored on to commit to github
 
 .vs/
 node_modules/
 dist/
-.env
